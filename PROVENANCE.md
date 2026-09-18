@@ -22,6 +22,8 @@ a fresh history; the commits here do not reproduce the working history.
   with its launchers, tests and user guide. It shares this core and this store.
   Reminders, per-task notes files, a daily journal, mantras, bulk edits, custom date
   filters and a settings dialog exist only there.
+  The author's own daily use is that desktop interface; the browser interface is
+  the published one because it needs no desktop toolkit and has HTTP-level tests.
 - Planning notes, design discussions and idea lists; editor configuration; the icon
   generator (`tools/make_icon.py`, which needs Pillow); the Poetry lock file.
 
