@@ -1,0 +1,14 @@
+# Task data: the SQLite store, its WAL files and the JSON backups stay out of git.
+data/
+tasklistprogram/data/
+*.db
+*.db-wal
+*.db-shm
+*.json.bak
+backups/
+
+# Python and editor artifacts
+__pycache__/
+*.py[cod]
+.venv/
+.idea/

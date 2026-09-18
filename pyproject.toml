@@ -1,0 +1,14 @@
+# Project metadata only. Tiny Tasklist runs from a source checkout
+# (python -m tasklistprogram) and is not packaged for installation.
+[project]
+name = "tiny-tasklist"
+version = "0.1.0"
+description = "A local task and habit manager with a browser interface, Python standard library only."
+authors = [
+    {name = "LacrimaeAware"}
+]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+dependencies = [
+]
