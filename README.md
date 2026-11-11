@@ -4,7 +4,7 @@ A Python/Tkinter desktop app for tasks and repeating habits. It has due dates,
 priorities, groups, bulk edits and reminder checkpoints. Task notes and daily
 journals are Markdown files; tasks are stored in SQLite.
 
-See the [project page](site/index.html) and [user guide](docs/USER_GUIDE.md).
+See the [project page](https://lacrimaeaware.github.io/tiny-tasklist/) and [user guide](docs/USER_GUIDE.md).
 
 ![Tiny Tasklist desktop app with grouped sample tasks, due dates, priorities and notes](docs/images/desktop-demo.jpg)
 
@@ -51,7 +51,7 @@ The desktop also uses that folder for `task_documents/`, `journals/` and
 
 ## Documentation
 
-- [Project page](site/index.html): build its local assets with `python scripts/build_site.py`, then open `site/index.html`. The resulting `site/` folder can be served on its own.
+- [Project page](https://lacrimaeaware.github.io/tiny-tasklist/): build its local assets with `python scripts/build_site.py`, then open `site/index.html`. The resulting `site/` folder can be served on its own.
 - [User guide](docs/USER_GUIDE.md)
 - [Import format](docs/IMPORTING.md)
 - [Architecture and API](docs/ARCHITECTURE.md)
