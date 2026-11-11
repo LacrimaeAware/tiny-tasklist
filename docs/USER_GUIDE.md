@@ -1,7 +1,8 @@
 # User guide
 
 Tiny Tasklist keeps one-off tasks and repeating habits in a desktop task list.
-Run `python -m tasklistprogram` from the repository root. The optional
+Requires Python 3.13 or newer with Tkinter. Run `python -m tasklistprogram`
+from the repository root. The optional
 [browser prototype](#browser-prototype) is described below. The
 [import format](IMPORTING.md) page has the complete due-date grammar.
 

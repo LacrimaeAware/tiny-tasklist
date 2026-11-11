@@ -143,7 +143,7 @@ def build():
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{escape(first_heading)} | Tiny Tasklist</title><link rel="stylesheet" href="../styles.css"></head>
 <body><a class="skip" href="#main">Skip to content</a>
-<header class="page-header"><a class="brand" href="../index.html"><img src="../demo/assets/icon.png" alt="" width="30" height="30">Tiny Tasklist</a><nav aria-label="Main"><a href="../index.html#run">Run the desktop app</a><a href="../demo/?demo=1">Browser prototype</a></nav></header>
+<header class="page-header"><a class="brand" href="../index.html"><img src="../demo/assets/icon.png" alt="" width="30" height="30">Tiny Tasklist</a><nav aria-label="Main"><a href="../index.html">Project page</a><a href="../demo/?demo=1">Browser prototype</a></nav></header>
 <main class="reference" id="main">{body}</main>
 <footer class="page-footer"><a href="../index.html">Back to Tiny Tasklist</a><a href="LICENSE.txt">MIT license</a></footer></body></html>
 '''

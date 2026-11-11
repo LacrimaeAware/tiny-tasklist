@@ -159,15 +159,20 @@ fields without using them.
   original goes to `base_priority`), three set Ultra. Completing the task or
   `POST /api/hazard/reset` restores it.
 
+## Project page
+
+Build the static page and its reference copies from the repository root:
+
+```sh
+python scripts/build_site.py
+```
+
+Open `site/index.html`, or serve the `site/` folder with a static server.
+
 ## Tests
 
-`python -m unittest discover -s tests`. `test_dates`, `test_scheduler`,
-`test_io_import`, `test_filters`, `test_reminders` and `test_model` cover the core
-(the store tests use a temporary directory). `test_desktop` checks recurring
-completion, journal and note-file integration, and the status bar without opening
-a window; `test_desktop_midnight` checks revision reload before the timer saves.
-`test_webserver` covers the adapter functions; `test_webserver_http`
-starts a real server on a free port with a temporary data directory and exercises
-routing, the request checks, catch-up, persistence and the command line;
-`test_web_assets` checks that the web files exist and, if Node is installed, that the
-scripts parse and browser error handling preserves unsaved input and stored state.
+```sh
+python -m unittest discover -s tests
+```
+
+Node, when installed, also runs the browser-script checks.
