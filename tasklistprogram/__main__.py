@@ -1,5 +1,4 @@
-"""`python -m tasklistprogram` starts the local web server (see webserver.py)."""
-from .webserver import main
+from .app import main
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

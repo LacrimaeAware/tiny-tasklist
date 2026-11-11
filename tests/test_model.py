@@ -103,6 +103,23 @@ class StoreTests(unittest.TestCase):
         db = model.load_db()
         self.assertEqual(len(db["tasks"]), 1)
 
+    def test_unreadable_legacy_json_is_not_replaced_by_an_empty_store(self):
+        import json
+        model.DATA_FILE.write_text("{invalid", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Could not read legacy"):
+            model.load_db()
+        self.assertTrue(model.DATA_FILE.exists())
+        self.assertFalse(self._premigration().exists())
+        model.DATA_FILE.write_text(json.dumps({"tasks": [{"id": 1, "title": "recovered"}]}), encoding="utf-8")
+        self.assertEqual(model.load_db()["tasks"][0]["title"], "recovered")
+
+    def test_unreadable_legacy_json_uses_a_valid_backup(self):
+        import json
+        model.DATA_FILE.write_text("{invalid", encoding="utf-8")
+        model.BACKUP_FILE.write_text(json.dumps({"tasks": [{"id": 1, "title": "backup"}]}), encoding="utf-8")
+        self.assertEqual(model.load_db()["tasks"][0]["title"], "backup")
+        self.assertEqual(self._premigration().read_text(encoding="utf-8"), "{invalid")
+
 
 class BackupTests(unittest.TestCase):
     def test_save_creates_daily_backup_and_prunes(self):
@@ -160,6 +177,24 @@ class StatsTests(unittest.TestCase):
         summary = model.stats_summary(db)
         self.assertTrue(summary["top_streaks"])
         self.assertEqual(summary["top_streaks"][0][1], 3)
+
+    def test_stats_include_habit_completions_today_and_window_boundaries(self):
+        today = date.today()
+        history = [(today - timedelta(days=i)).isoformat() for i in range(31)]
+        history += [today.isoformat(), "invalid", (today + timedelta(days=1)).isoformat()]
+        db = {"tasks": [{"id": 1, "title": "habit", "repeat": "daily", "history": history, "completed_at": ""}]}
+        summary = model.stats_summary(db)
+        self.assertEqual(summary["done_today"], 1)
+        self.assertEqual(summary["done_7"], 7)
+        self.assertEqual(summary["done_30"], 30)
+        self.assertEqual(summary["top_streaks"][0][1], 31)
+
+    def test_stats_exclude_deleted_and_suspended_tasks(self):
+        db = {"tasks": [
+            {"title": "deleted", "is_deleted": True, "repeat": "daily", "history": [date.today().isoformat()]},
+            {"title": "suspended", "is_suspended": True, "repeat": "none"},
+        ]}
+        self.assertEqual(model.stats_summary(db), {"open": 0, "done_today": 0, "done_7": 0, "done_30": 0, "top_streaks": []})
 
 
 if __name__ == "__main__":

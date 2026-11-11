@@ -7,8 +7,8 @@ Run from the repository root:
     python -m tasklistprogram.webserver --data-dir /tmp/demo # separate store
 
 The server listens on 127.0.0.1 only and has no authentication: it is meant for the
-person sitting at this machine. State-changing requests must carry a JSON body and
-come from the page it serves (or from a local tool that sends no Origin header).
+person sitting at this machine. State-changing requests check Origin/Referer
+headers and require JSON when a body is supplied.
 """
 import argparse
 import json
@@ -85,8 +85,8 @@ def op_reset_hazard(db: dict) -> int:
 
 
 def client_tasks(db: dict) -> list:
-    # Return ALL tasks (including deleted) so the client can filter by category
-    # exactly like the desktop, including a Deleted view with restore.
+    # Return all tasks, including deleted ones, for client-side category filtering
+    # and the Deleted view's restore action.
     return [to_client(t) for t in db["tasks"]]
 
 
@@ -422,7 +422,7 @@ class Handler(BaseHTTPRequestHandler):
             path = "/index.html"
         target = (WEB_DIR / path.lstrip("/")).resolve()
         # prevent path traversal outside web/
-        if not str(target).startswith(str(WEB_DIR.resolve())) or not target.is_file():
+        if not target.is_relative_to(WEB_DIR.resolve()) or not target.is_file():
             self.send_error(404)
             return
         ctype = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
@@ -448,6 +448,11 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if args.data_dir:
         model.set_data_dir(args.data_dir)
+    try:
+        model.load_db()
+    except Exception as e:
+        print(f"Could not open task store: {e}", file=sys.stderr)
+        return 1
     try:
         server = ThreadingHTTPServer((HOST, args.port), Handler)
     except OSError as e:

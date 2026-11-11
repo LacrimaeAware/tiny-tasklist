@@ -1,8 +1,11 @@
 # Importing tasks
 
-Bulk-add tasks by pasting lines into the gear menu's **Import tasks** dialog. This
-page is the precise format, plus a copy-paste prompt so you can hand an AI assistant a
-messy list and get back clean, importable lines.
+On the desktop, choose **File → Import Tasks…** to open a text file or
+**File → Import (paste text)…** to paste lines. In the browser, use the gear menu's
+**Import tasks** dialog.
+
+The desktop and browser server use the format below. The static demo imports
+titles only.
 
 ## The format (one task per line)
 

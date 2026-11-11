@@ -12,3 +12,8 @@ __pycache__/
 *.py[cod]
 .venv/
 .idea/
+
+# Rebuilt from the canonical app, screenshot and reference docs.
+site/demo/
+site/assets/
+site/reference/

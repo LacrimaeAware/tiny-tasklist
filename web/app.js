@@ -21,9 +21,10 @@ const CATEGORIES = [
   { id: "all", icon: "📋", label: "All" },
 ];
 
-let tasks = SAMPLE_TASKS.slice();
-let nextId = Math.max(...tasks.map((t) => t.id)) + 1;
-let LIVE = false;
+let LIVE = window.location.protocol !== "file:" && new URLSearchParams(window.location.search).get("demo") !== "1";
+let tasks = LIVE ? [] : SAMPLE_TASKS.slice();
+let nextId = Math.max(0, ...tasks.map((t) => t.id)) + 1;
+let loadError = "";
 let editingId = null;
 let _menu = null;
 let _toastTimer = null;
@@ -34,7 +35,7 @@ function loadState() {
   try { s = JSON.parse(localStorage.getItem("tt_state") || "{}"); } catch (e) {}
   return {
     category: s.category || "active",
-    time: s.time || "today",
+    time: s.time || "any",
     minPrio: s.minPrio || "all",
     grouped: !!s.grouped,
     collapsed: new Set(s.collapsed || []),
@@ -55,13 +56,17 @@ function saveState() {
 async function api(method, url, body) {
   const opts = { method, headers: { "Content-Type": "application/json" } };
   if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(url, opts);
-  if (!r.ok) throw new Error("api " + r.status);
-  return r.json();
+  let r;
+  try { r = await fetch(url, opts); }
+  catch (e) { throw new Error("Could not reach the local server. Check that it is running and try again."); }
+  const result = await r.json();
+  if (!r.ok) throw new Error(result.error || "Request failed (" + r.status + ")");
+  return result;
 }
 async function loadData() {
-  try { tasks = (await api("GET", "/api/tasks")).tasks; LIVE = true; }
-  catch (e) { tasks = SAMPLE_TASKS.slice(); LIVE = false; }
+  if (!LIVE) return;
+  tasks = (await api("GET", "/api/tasks")).tasks;
+  loadError = "";
 }
 
 /* ---------- date helpers ---------- */
@@ -85,12 +90,13 @@ function categoryPass(t, cat) {
   const done = !!t.done, deleted = !!t.is_deleted, suspended = !!t.suspended;
   const repeating = t.repeat && t.repeat !== "none";
   if (cat === "deleted") return deleted;
+  if (cat === "all") return !deleted;
   if (cat === "suspended") return suspended && !deleted;
   if (cat === "done") return done && !deleted && !suspended;
   if (deleted || suspended || done) return false;
   if (cat === "overdue") { const d = parseDue(t.due); return !!(d && d < new Date()); }
   if (cat === "repeating") return repeating;
-  return true; // active / all
+  return true; // active
 }
 function timePass(t, cat, time) {
   if (cat === "deleted" || cat === "suspended" || cat === "done") return true;
@@ -226,7 +232,7 @@ function closeMenu() { if (_menu) { _menu.remove(); _menu = null; } }
 /* ---------- mutations ---------- */
 async function toggleDone(t) {
   const snap = { ...t };
-  if (LIVE) { try { Object.assign(t, await api("POST", `/api/tasks/${t.id}/toggle`)); } catch (e) { t.done = !t.done; } }
+  if (LIVE) { try { Object.assign(t, await api("POST", `/api/tasks/${t.id}/toggle`)); } catch (e) { showToast("Could not update task: " + e.message); return; } }
   else { t.done = !t.done; }
   render();
   showToast(snap.done ? "Marked not done" : "Marked done", "Undo", () => undoToggle(snap));
@@ -239,37 +245,37 @@ async function undoToggle(snap) {
         history: snap.history || [], is_suspended: !!snap.suspended,
       });
       await loadData();
-    } catch (e) {}
+    } catch (e) { showToast("Could not undo: " + e.message); return; }
   } else { const t = tasks.find((x) => x.id === snap.id); if (t) Object.assign(t, snap); }
   render();
 }
 async function setSuspended(t, val) {
-  if (LIVE) { try { Object.assign(t, await api("PATCH", `/api/tasks/${t.id}`, { is_suspended: val })); } catch (e) {} }
+  if (LIVE) { try { Object.assign(t, await api("PATCH", `/api/tasks/${t.id}`, { is_suspended: val })); } catch (e) { showToast("Could not update task: " + e.message); return; } }
   else { t.suspended = val; }
   render();
   showToast(val ? "Suspended" : "Unsuspended", "Undo", () => setSuspended(t, !val));
 }
 async function deleteTask(t) {
   const snap = { ...t };
-  if (LIVE) { try { await api("DELETE", `/api/tasks/${t.id}`); t.is_deleted = true; } catch (e) {} }
+  if (LIVE) { try { await api("DELETE", `/api/tasks/${t.id}`); t.is_deleted = true; } catch (e) { showToast("Could not delete task: " + e.message); return; } }
   else { t.is_deleted = true; }
   render();
   showToast("Deleted", "Undo", () => restoreTask(snap));
 }
 async function restoreTask(t) {
-  if (LIVE) { try { Object.assign(t, await api("PATCH", `/api/tasks/${t.id}`, { is_deleted: false })); } catch (e) {} }
+  if (LIVE) { try { Object.assign(t, await api("PATCH", `/api/tasks/${t.id}`, { is_deleted: false })); } catch (e) { showToast("Could not restore task: " + e.message); return; } }
   const local = tasks.find((x) => x.id === t.id); if (local) local.is_deleted = false;
   render();
 }
 async function hardDelete(t) {
   if (!window.confirm(`Permanently delete "${t.title}"? This cannot be undone.`)) return;
-  if (LIVE) { try { await api("POST", `/api/tasks/${t.id}/harddelete`); } catch (e) {} }
+  if (LIVE) { try { await api("POST", `/api/tasks/${t.id}/harddelete`); } catch (e) { showToast("Could not delete task: " + e.message); return; } }
   tasks = tasks.filter((x) => x.id !== t.id);
   render();
   showToast("Permanently deleted");
 }
 async function resetHazard() {
-  if (LIVE) { try { await api("POST", "/api/hazard/reset"); await loadData(); } catch (e) {} }
+  if (LIVE) { try { await api("POST", "/api/hazard/reset"); await loadData(); } catch (e) { showToast("Could not reset escalation: " + e.message); return; } }
   else { tasks.forEach((t) => { t.skip_count = 0; }); }
   render();
   showToast("Hazard escalation reset");
@@ -358,13 +364,13 @@ function render() {
   const content = document.getElementById("content");
   content.innerHTML = "";
 
-  if (showToday) {
-    const banner = LIVE
-      ? `<div class="banner">🟢 Connected to your local data.</div>`
-      : `<div class="banner">✨ Static demo with sample data. Run the local server to work with your own tasks.</div>`;
-    content.insertAdjacentHTML("beforeend", banner);
-    renderStats(content);
+  if (loadError) {
+    content.insertAdjacentHTML("beforeend", `<div class="banner" role="alert">Could not load tasks. ${escapeHtml(loadError)} Reload this page to retry.</div>`);
+    return;
   }
+  if (!LIVE) content.insertAdjacentHTML("beforeend", `<div class="banner">Static demo with sample data. Changes are not saved. Run the local server to keep your tasks.</div>`);
+  else if (showToday) content.insertAdjacentHTML("beforeend", `<div class="banner">Connected to your local data.</div>`);
+  if (showToday) renderStats(content);
   if (state.category === "repeating" && !state.group) renderHeatmap(content);
 
   let list = filtered();
@@ -426,6 +432,7 @@ function val(id) { return document.getElementById(id).value; }
 function setVal(id, v) { document.getElementById(id).value = v; }
 function openModal(task) {
   editingId = task ? task.id : null;
+  document.getElementById("m_error").hidden = true;
   document.getElementById("m_modalTitle").textContent = task ? "Edit task" : "Add a task";
   document.getElementById("m_save").textContent = task ? "Save" : "Add task";
   setVal("m_title", task ? task.title : "");
@@ -481,6 +488,7 @@ async function copyAiPrompt() {
 
 function openImport() {
   document.getElementById("imp_text").value = "";
+  document.getElementById("imp_result").hidden = true;
   document.getElementById("importOverlay").classList.add("open");
   document.getElementById("imp_text").focus();
 }
@@ -492,11 +500,17 @@ async function doImport() {
     try {
       const r = await api("POST", "/api/import", { text });
       await loadData();
-      closeImport(); render();
-      showToast(`Imported ${r.added}` + (r.failed ? ` · ${r.failed} skipped` : ""));
-    } catch (e) { showToast("Import failed"); }
+      render();
+      if (r.failed) {
+        const result = document.getElementById("imp_result");
+        result.textContent = `Added ${r.added}. ${r.details.join(" ")} Only the skipped lines remain below; correct them and import again.`;
+        result.hidden = false;
+        const failedLines = new Set(r.details.map((d) => Number(d.match(/^Line (\d+):/)[1])));
+        document.getElementById("imp_text").value = text.split(/\r?\n/).filter((_, i) => failedLines.has(i + 1)).join("\n");
+      } else { closeImport(); showToast(`Imported ${r.added}`); }
+    } catch (e) { showToast("Could not import: " + e.message); }
   } else {
-    // sample mode: accept title-only lines so the demo still does something.
+    // Sample mode accepts title-only lines.
     text.split(/\r?\n/).forEach((line) => {
       const t = line.split("|")[0].trim();
       if (t && !t.startsWith("#")) tasks.push({ id: nextId++, title: t, due: "", priority: "M", repeat: "none", group: "", notes: "", done: false, times: 0 });
@@ -505,17 +519,29 @@ async function doImport() {
   }
 }
 async function saveModal() {
+  const error = document.getElementById("m_error");
+  error.hidden = true;
   const title = val("m_title").trim();
-  if (!title) return;
+  if (!title) { error.textContent = "Enter a title."; error.hidden = false; return; }
   const payload = { title, due: val("m_due").trim(), priority: val("m_prio"), repeat: val("m_repeat"), group: val("m_group").trim(), notes: val("m_notes") };
-  if (editingId != null) {
-    if (LIVE) { try { const u = await api("PATCH", `/api/tasks/${editingId}`, payload); const i = tasks.findIndex((t) => t.id === editingId); if (i >= 0) tasks[i] = u; } catch (e) {} }
-    else { const t = tasks.find((x) => x.id === editingId); if (t) { t.title = title; t.due = parseQuickDue(payload.due); t.priority = payload.priority; t.repeat = payload.repeat; t.group = payload.group; t.notes = payload.notes; } }
-  } else {
-    if (LIVE) { try { tasks.push(await api("POST", "/api/tasks", payload)); } catch (e) {} }
-    else { tasks.push({ id: nextId++, title, due: parseQuickDue(payload.due), priority: payload.priority, repeat: payload.repeat, group: payload.group, notes: payload.notes, done: false, times: 0 }); }
+  const save = document.getElementById("m_save");
+  save.disabled = true;
+  try {
+    if (!LIVE) payload.due = parseQuickDue(payload.due);
+    if (editingId != null) {
+      if (LIVE) { const u = await api("PATCH", `/api/tasks/${editingId}`, payload); const i = tasks.findIndex((t) => t.id === editingId); if (i >= 0) tasks[i] = u; }
+      else { const t = tasks.find((x) => x.id === editingId); if (t) Object.assign(t, payload); }
+    } else {
+      if (LIVE) tasks.push(await api("POST", "/api/tasks", payload));
+      else tasks.push({ id: nextId++, ...payload, done: false, times: 0 });
+    }
+    closeModal(); render();
+  } catch (e) {
+    error.textContent = "Could not save: " + e.message;
+    error.hidden = false;
+  } finally {
+    save.disabled = false;
   }
-  closeModal(); render();
 }
 
 /* ---------- misc ---------- */
@@ -534,8 +560,8 @@ function parseQuickDue(s) {
   if (s === "tomorrow") return isoDate(addDays(startOfToday(), 1));
   const m = s.match(/^\+(\d+)d$/);
   if (m) return isoDate(addDays(startOfToday(), parseInt(m[1], 10)));
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
-  return isoDate(startOfToday());
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s) && isoDate(parseDue(s)) === s) return s;
+  throw new Error("In the demo, use today, tomorrow, +Nd or YYYY-MM-DD for the due date.");
 }
 
 /* ---------- init ---------- */
@@ -569,7 +595,8 @@ async function init() {
   document.getElementById("imp_prompt").onclick = copyAiPrompt;
   document.addEventListener("click", closeMenu);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeMenu(); closeModal(); closeImport(); } });
-  await loadData();
+  try { await loadData(); }
+  catch (e) { loadError = e.message; }
   render();
 }
 document.addEventListener("DOMContentLoaded", init);

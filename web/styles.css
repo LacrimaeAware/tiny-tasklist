@@ -8,8 +8,8 @@
   --surface-3: #e9ebef;
   --border: #e4e6eb;
   --text: #1c1e21;
-  --text-muted: #6b7280;
-  --text-faint: #9aa1ad;
+  --text-muted: #626975;
+  --text-faint: #626975;
   --accent: #5b6cf0;
   --accent-2: #8a5cf6;
   --accent-weak: #ecedfd;
@@ -36,7 +36,7 @@
   --border: #2c313a;
   --text: #e6e8eb;
   --text-muted: #9aa1ad;
-  --text-faint: #6b7280;
+  --text-faint: #9aa1ad;
   --accent: #7c8cff;
   --accent-2: #a07cff;
   --accent-weak: #23263a;
@@ -270,8 +270,7 @@ body {
   transition: box-shadow .14s ease, transform .05s ease, border-color .14s;
 }
 .task:hover { box-shadow: var(--shadow-md); }
-.task.done { opacity: .55; }
-.task.done .title { text-decoration: line-through; }
+.task.done .title { text-decoration: line-through; color: var(--text-muted); }
 
 .check {
   width: 20px; height: 20px;
@@ -438,4 +437,15 @@ body {
   .menu-btn { display: grid; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .search input { width: 150px; }
+}
+
+@media (max-width: 600px) {
+  .topbar { flex-wrap: wrap; gap: 8px; padding: 12px; }
+  .topbar > div:first-of-type { flex: 1; min-width: 0; }
+  .topbar h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar .spacer { display: none; }
+  .topbar .icon-btn { width: 44px; height: 44px; flex-shrink: 0; }
+  .topbar .btn { white-space: nowrap; min-height: 44px; padding-inline: 10px; flex-shrink: 0; }
+  .topbar .search { order: 1; flex: 1 0 100%; min-width: 0; }
+  .topbar .search input { width: 100%; font-size: 16px; }
 }

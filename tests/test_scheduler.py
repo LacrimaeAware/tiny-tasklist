@@ -12,7 +12,7 @@ def task(**kw):
 
 
 class AdvanceRepeatingTests(unittest.TestCase):
-    def test_advances_past_today(self):
+    def test_advances_to_today(self):
         yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
         db = {"tasks": [task(due=yesterday, repeat="daily")]}
         changed = scheduler.advance_repeating_tasks(db, today=date.today())

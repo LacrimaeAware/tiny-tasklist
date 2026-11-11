@@ -1,7 +1,36 @@
 # Changelog
 
-User-facing changes to the browser interface and the shared core, newest first.
+Changes to the desktop app, browser prototype and shared task logic, newest first.
 Dates are local.
+
+## 2026-11-10
+
+- Added the Tkinter desktop application: window, table, dialogs, task documents,
+  journals, reminders and application icons.
+- `python -m tasklistprogram` opens the desktop app. The browser prototype remains
+  available through `python -m tasklistprogram.webserver`.
+- The desktop status bar uses the shared statistics helper, so today's recurring
+  completions count even after their next occurrence has been scheduled.
+
+## 2026-11-09
+
+- A project page shows the browser prototype, sample-data demo, local-run instructions
+  and reference docs.
+  The sample demo can run over HTTP with `?demo=1`; it makes no API requests.
+- The first visit shows tasks from any date, including tasks without a due date.
+- All includes completed and suspended tasks, with deleted tasks kept separate.
+- Narrow screens give search its own toolbar row, keeping task and settings
+  controls visible. Completed tasks keep readable text contrast.
+- Failed browser actions show an error. An unsuccessful save keeps the form open
+  and preserves its contents; a failed server connection does not load demo data.
+- Import errors identify skipped lines and leave only those lines in the form for
+  correction, so retrying does not duplicate successful imports.
+- Habit statistics include today's completions and streak. Completion windows cover
+  the last 7 and 30 calendar days, including today, and omit deleted or suspended tasks.
+- Startup stops if legacy JSON and its backup cannot be read, allowing a repaired
+  file to be imported on the next start.
+- Static file requests must stay within the served folder, including when a sibling
+  folder has a similar name.
 
 ## 2026-09-17
 
@@ -14,12 +43,13 @@ Dates are local.
   non-object body or a bad Content-Length return 400 instead of dropping the
   connection. State-changing requests must send JSON and may not come from another
   site's page (403).
-- `python -m tasklistprogram` starts the server. New `--port` (0 picks a free port)
+- The browser edition started the server from `python -m tasklistprogram`.
+  New `--port` (0 picks a free port)
   and `--data-dir` options; a busy port or a bad value prints one line, not a
   traceback.
 - The Repeating view and the "best streak" card show zero until a repeating task has
   a completion, instead of placeholder numbers.
-- The static mode is called a demo in the banner and in comments.
+- Static mode displays a demo banner.
 
 ## 2026-06-08
 
@@ -40,7 +70,7 @@ Dates are local.
   completing, suspending or deleting; Suspended view; Completed ordered by recency.
 - "Done today" counts repeating tasks through their history; the heatmap ignores
   suspended tasks.
-- Concurrent requests to the server are serialized so two saves cannot lose data.
+- Concurrent requests handled by one server are serialized.
 - Due parsing accepts bare times, `today` and `tomorrow`, month names and more in
   every field that takes a due value; a JSON file saved with a UTF-8 byte order mark
   loads.

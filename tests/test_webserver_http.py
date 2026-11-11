@@ -96,6 +96,17 @@ class StaticAndRoutingTests(ServerTestCase):
         status, _, _ = self.request("GET", "/nonexistent.js")
         self.assertEqual(status, 404)
 
+    def test_static_files_cannot_escape_into_a_sibling_with_the_same_prefix(self):
+        from unittest.mock import patch
+        web = self.tmp / "web"
+        web.mkdir()
+        sibling = self.tmp / "web-extra"
+        sibling.mkdir()
+        (sibling / "example.txt").write_text("outside the served folder", encoding="utf-8")
+        with patch.object(ws, "WEB_DIR", web):
+            status, _, _ = self.request("GET", "/../web-extra/example.txt")
+        self.assertEqual(status, 404)
+
     def test_unknown_api_route_is_404(self):
         status, body, _ = self.request("POST", "/api/nothing", {})
         self.assertEqual(status, 404)

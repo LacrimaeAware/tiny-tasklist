@@ -80,9 +80,8 @@ def normalize_settings(settings: dict) -> dict:
     return merged
 
 # ===== SQLite storage =====
-# Tasks are stored one-per-row as a JSON blob (lossless, schema-flexible); meta holds
-# version / next_id / settings / rev. Writes happen inside a transaction, so a save
-# is atomic and can't leave a half-written/corrupt store the way a raw file can.
+# Tasks are stored one per row as JSON; meta holds version / next_id / settings / rev.
+# A save replaces the task and metadata rows in one SQLite transaction.
 
 def _connect() -> sqlite3.Connection:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -144,11 +143,14 @@ def _migrate_from_json_if_needed(conn: sqlite3.Connection) -> None:
         return  # fresh install, nothing to migrate
     try:
         data = _load_json(DATA_FILE)
-    except Exception:
-        if BACKUP_FILE.exists():
+    except (OSError, ValueError) as error:
+        try:
             data = _load_json(BACKUP_FILE)
-        else:
-            return
+        except (OSError, ValueError):
+            raise ValueError(
+                "Could not read legacy tasks_gui.json or its backup. Repair the JSON "
+                "or restore a valid tasks_gui.json.bak before restarting."
+            ) from error
     _write_all(conn, data)
     # Keep the original JSON forever as a safety copy (do not delete).
     try:
@@ -175,10 +177,12 @@ def load_db():
         if LEGACY_BACKUP_FILE.exists():
             LEGACY_BACKUP_FILE.replace(BACKUP_FILE)
     conn = _connect()
-    _init_schema(conn)
-    _migrate_from_json_if_needed(conn)
-    db = _read_all(conn)
-    conn.close()
+    try:
+        _init_schema(conn)
+        _migrate_from_json_if_needed(conn)
+        db = _read_all(conn)
+    finally:
+        conn.close()
     if "version" not in db:
         db["version"] = 1
     db["settings"] = normalize_settings(db.get("settings", {}))
@@ -207,7 +211,7 @@ def _rotate_daily_backup(payload: dict):
 def save_db(db):
     conn = _connect()
     _init_schema(conn)
-    # .bak = the previous good state as readable JSON, for quick manual recovery.
+    # .bak = the previous stored state as readable JSON, for manual recovery.
     try:
         prev = _read_all(conn)
         if prev["tasks"] or prev["settings"]:
@@ -229,10 +233,9 @@ def delete_task(db, tid: int):
     db["tasks"] = [t for t in db["tasks"] if t["id"] != tid]
 
 def stats_summary(db):
-    now = datetime.now()
     today = date.today()
-    seven = now - timedelta(days=7)
-    thirty = now - timedelta(days=30)
+    seven = today - timedelta(days=6)
+    thirty = today - timedelta(days=29)
 
     done_today = 0
     done_7 = 0
@@ -240,26 +243,32 @@ def stats_summary(db):
     open_count = 0
 
     for t in db["tasks"]:
-        if t.get("completed_at"):
-            try:
-                ct = datetime.fromisoformat(t["completed_at"])
-            except Exception:
-                continue
-            if ct.date() == today:
-                done_today += 1
-            if ct >= seven:
-                done_7 += 1
-            if ct >= thirty:
-                done_30 += 1
-        else:
+        if t.get("is_deleted") or t.get("is_suspended"):
+            continue
+        repeating = (t.get("repeat") or "none").lower() != "none"
+        if not t.get("completed_at"):
             open_count += 1
+        completed_days = set()
+        values = t.get("history", []) if repeating else [t.get("completed_at", "")]
+        for value in values:
+            try:
+                completed_days.add(date.fromisoformat(str(value)[:10]))
+            except ValueError:
+                continue
+        for completed in completed_days:
+            if completed == today:
+                done_today += 1
+            if seven <= completed <= today:
+                done_7 += 1
+            if thirty <= completed <= today:
+                done_30 += 1
 
     def streak_for(t):
         hist = set(t.get("history", []))
         if not hist:
             return 0
         streak = 0
-        d = today - timedelta(days=1)
+        d = today if today.isoformat() in hist else today - timedelta(days=1)
         while d.isoformat() in hist:
             streak += 1
             d -= timedelta(days=1)
@@ -267,7 +276,7 @@ def stats_summary(db):
 
     streaks = []
     for t in db["tasks"]:
-        if (t.get("repeat") or "").lower() not in ("", "none"):
+        if not t.get("is_deleted") and not t.get("is_suspended") and (t.get("repeat") or "").lower() not in ("", "none"):
             streaks.append((t["title"], streak_for(t)))
 
     streaks.sort(key=lambda x: x[1], reverse=True)

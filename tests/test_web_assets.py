@@ -1,8 +1,7 @@
 """Guard against shipping a broken web front-end.
 
-A single JS syntax error makes the whole app.js fail to load (no tasks, dead theme
-toggle, etc.) with nothing obvious in the console. If Node is available, lint the
-web scripts with `node --check`; otherwise skip.
+If Node is available, check the browser scripts with `node --check` and run the
+error-handling tests; otherwise skip those checks.
 """
 import shutil
 import subprocess
@@ -26,6 +25,13 @@ class WebJsSyntaxTests(unittest.TestCase):
 
     def test_sample_data_js(self):
         self._check("sample-data.js")
+
+    def test_browser_error_handling(self):
+        result = subprocess.run(
+            [NODE, "--test", str(Path(__file__).with_name("web_behavior.test.js"))],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 class WebFilesPresentTests(unittest.TestCase):

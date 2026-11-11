@@ -1,33 +1,27 @@
-# Provenance
+# Project notes
 
-This repository is the browser edition of Tiny Tasklist. It was exported on
-2026-09-17 from the author's private working repository into a new repository with
-a fresh history; the commits here do not reproduce the working history.
+Tiny Tasklist's Python/Tkinter desktop application and optional browser prototype
+share a SQLite store and task rules.
 
 ## What is included
 
-- `tasklistprogram/core/`: the shared task logic (SQLite store, date parsing,
-  recurrence, text import).
+- `tasklistprogram/app.py` and `ui/`: the desktop window, task list, dialogs,
+  autocomplete, themes and application icons.
+- `tasklistprogram/core/`: SQLite storage, date parsing, recurrence, filters,
+  imports, desktop actions, Markdown notes, journals and reminder checkpoints.
 - `tasklistprogram/webserver.py` and `web/`: the local HTTP server with its JSON API
-  and the page it serves; `python -m tasklistprogram` starts it.
-- `tests/`: the tests that run without a desktop toolkit (127 at export time).
-- `docs/`: user guide, import format, architecture, changelog and known issues,
-  written for this edition, plus the screenshot.
-- `LICENSE` (MIT), unchanged.
+  and the optional browser prototype.
+- `tests/`: core, desktop-logic, HTTP and browser-script checks using temporary stores.
+- `docs/`: user guide, import format, architecture, changelog, known issues and
+  screenshots of the desktop app and browser prototype with invented tasks.
+- `LICENSE`: MIT.
 
-## What stays in the working repository
+## Scope
 
-- The Tkinter desktop interface (`app.py`, `ui/`, `core/actions.py`,
-  `core/documents.py`, `core/reminders.py`, `core/filters.py`, `core/constants.py`)
-  with its launchers, tests and user guide. It shares this core and this store.
-  Reminders, per-task notes files, a daily journal, mantras, bulk edits, custom date
-  filters and a settings dialog exist only there.
-  The author's own daily use is that desktop interface; the browser interface is
-  the published one because it needs no desktop toolkit and has HTTP-level tests.
-- Planning notes, design discussions and idea lists; editor configuration; the icon
-  generator (`tools/make_icon.py`, which needs Pillow); the Poetry lock file.
+The application runs from a source checkout with Python's standard library and
+Tkinter. `python -m tasklistprogram` opens the desktop;
+`python -m tasklistprogram.webserver` starts the browser prototype. A new data
+folder starts with an empty store. The browser's sample-data demo does not save
+changes.
 
-## Authorship
-
-Developed with AI assistance; design decisions, reviews and the claims in these
-documents are the author's.
+Generated with AI.

@@ -41,7 +41,7 @@
       <header class="topbar">
         <button class="icon-btn menu-btn" id="menuBtn" title="Menu">☰</button>
         <div>
-          <h2 id="viewTitle">Today</h2>
+          <h2 id="viewTitle">Active</h2>
           <div class="sub" id="viewSub"></div>
         </div>
         <div class="spacer"></div>
@@ -57,8 +57,8 @@
       <div class="filterbar">
         <label class="fl">When
           <select id="f_time">
-            <option value="any">Any time</option>
-            <option value="today" selected>Today</option>
+            <option value="any" selected>Any time</option>
+            <option value="today">Today</option>
             <option value="week">This week</option>
             <option value="month">This month</option>
           </select>
@@ -128,6 +128,7 @@
         <label>Notes</label>
         <textarea id="m_notes" rows="3" placeholder="Optional details…"></textarea>
       </div>
+      <p id="m_error" role="alert" hidden></p>
       <div class="modal-actions">
         <button class="btn" id="m_cancel">Cancel</button>
         <button class="btn primary" id="m_save">Add task</button>
@@ -139,6 +140,7 @@
   <div class="overlay" id="importOverlay">
     <div class="modal">
       <h3>Import tasks</h3>
+      <p id="imp_result" role="status" hidden></p>
       <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px">
         One task per line. Optional fields after the title, separated by <code>|</code>:<br>
         <code>Title | due: 10/13 14:00 | prio: H/M/L/D/Misc | repeat: daily/weekly/… | group: Name | notes: …</code>

@@ -25,7 +25,7 @@ def apply_skip_escalation(task: dict) -> None:
 
 
 def advance_repeating_tasks(db: dict, today: Optional[date] = None, hazard_enabled: bool = False) -> bool:
-    """Advance repeating tasks to their next occurrence after *today*.
+    """Advance overdue repeating tasks to their latest occurrence on or before *today*.
 
     Catches up multiple missed occurrences, applies skip escalation when enabled,
     and re-activates a previously completed task whose new due lands on today.
